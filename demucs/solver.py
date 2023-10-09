@@ -309,6 +309,7 @@ class Solver(object):
                 sources = self.augment(sources)
                 mix = sources.sum(dim=1)
             else:
+                print(f"solver ln 312 sources shape {sources.shape}")
                 mix = sources[:, 0]
                 sources = sources[:, 1:]
 

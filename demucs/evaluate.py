@@ -1,4 +1,4 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+# Copyright (c) Facebook, Inc. and its affiliates.
 # All rights reserved.
 #
 # This source code is licensed under the license found in the
@@ -67,8 +67,7 @@ def eval_track(references, estimates, win, hop, compute_sdr=True):
 def evaluate(solver, compute_sdr=False):
     """
     Evaluate model using museval.
-    compute_sdr=False means using only the MDX definition of the SDR, which
-    is much faster to evaluate.
+    `new_only` means using only the MDX definition of the SDR, which is much faster to evaluate.
     """
 
     args = solver.args
@@ -127,14 +126,13 @@ def evaluate(solver, compute_sdr=False):
                 for name, estimate in zip(model.sources, estimates):
                     save_audio(estimate.cpu(), folder / (name + ".mp3"), model.samplerate)
 
-            pendings.append((track.name, pool.submit(
-                eval_track, references, estimates, win=win, hop=hop, compute_sdr=compute_sdr)))
+            pendings.append((track.name, 
+                eval_track(references, estimates, win=win, hop=hop, compute_sdr=compute_sdr)))
 
         pendings = LogProgress(logger, pendings, updates=args.misc.num_prints,
                                name='Eval (BSS)')
         tracks = {}
         for track_name, pending in pendings:
-            pending = pending.result()
             scores, nsdrs = pending
             tracks[track_name] = {}
             for idx, target in enumerate(model.sources):

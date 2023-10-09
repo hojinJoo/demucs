@@ -22,7 +22,7 @@ from .demucs import rescale_module
 from .states import capture_init
 from .spec import spectro, ispectro
 from .hdemucs import pad1d, ScaledEmbedding, HEncLayer, MultiWrap, HDecLayer
-
+from . import  distrib
 
 class HTDemucs(nn.Module):
     """
@@ -623,7 +623,7 @@ class HTDemucs(nn.Module):
 
         S = len(self.sources)
         x = x.view(B, S, -1, Fq, T)
-        x = x * std[:, None] + mean[:, None]
+        x = x * std[:, None] + mean[:, None] # [B/GPU , S, C * 2 ( CAC ), F, T]
 
         # to cpu as mps doesnt support complex numbers
         # demucs issue #435 ##432
@@ -633,15 +633,16 @@ class HTDemucs(nn.Module):
         if x_is_mps:
             x = x.cpu()
 
-        zout = self._mask(z, x)
+        zout = self._mask(z, x) # [B/GPU , S, C, F, T]
+
         if self.use_train_segment:
             if self.training:
                 x = self._ispec(zout, length)
             else:
                 x = self._ispec(zout, training_length)
         else:
-            x = self._ispec(zout, length)
-
+            x = self._ispec(zout, length) 
+        # x size : [B/GPU , S, C, T]
         # back to mps device
         if x_is_mps:
             x = x.to("mps")

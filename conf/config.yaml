@@ -8,7 +8,7 @@ defaults:
 
 dummy:
 dset:
-  musdb: /checkpoint/defossez/datasets/musdbhq
+  musdb: /workspace/musdb18hq
   musdb_samplerate: 44100
   use_musdb: true   # set to false to not use musdb as training data.
   wav:  # path to custom wav dataset
@@ -29,7 +29,7 @@ test:
   save: False
   best: True
   workers: 2
-  every: 20
+  every: 100
   split: true
   shifts: 1
   overlap: 0.25
