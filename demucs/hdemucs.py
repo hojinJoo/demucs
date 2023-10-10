@@ -302,10 +302,10 @@ class HDecLayer(nn.Module):
             self.dconv = DConv(chin, **dconv_kw)
 
     def forward(self, x, skip, length):
-        if distrib.rank == 0:
-            print(f"hdemucs ln305 x.shape: {x.shape}")
-        if distrib.rank == 0 and skip is not None:
-            print(f"skip not None {skip.shape}") 
+        # if distrib.rank == 0:
+        #     print(f"hdemucs ln305 x.shape: {x.shape}")
+        # if distrib.rank == 0 and skip is not None:
+        #     print(f"skip not None {skip.shape}") 
         if self.freq and x.dim() == 3:
             B, C, T = x.shape
             x = x.view(B, self.chin, -1, T)
@@ -506,7 +506,8 @@ class HDemucs(nn.Module):
                 assert freqs == 1
                 ker = time_stride * 2
                 stri = time_stride
-
+            # if distrib.rank ==0 :
+            #     print(f"index : {index} freq : {freq}" )
             pad = True
             last_freq = False
             if freq and freqs <= kernel_size:
@@ -549,6 +550,8 @@ class HDemucs(nn.Module):
             enc = HEncLayer(chin_z, chout_z,
                             dconv=dconv_mode & 1, context=context_enc, **kw)
             if hybrid and freq:
+                # if distrib.rank ==0 and last_freq: 
+                #     print(f"encoder empty index : {index}")
                 tenc = HEncLayer(chin, chout, dconv=dconv_mode & 1, context=context_enc,
                                  empty=last_freq, **kwt)
                 self.tencoder.append(tenc)
@@ -699,8 +702,8 @@ class HDemucs(nn.Module):
         x = mag
 
         B, C, Fq, T = x.shape
-        if distrib.rank ==0 :
-            print(f"hdemucs ln 699 x.shape: {x.shape}")
+        # if distrib.rank ==0 :
+        #     print(f"hdemucs ln 699 x.shape: {x.shape}")
         # unlike previous Demucs, we always normalize because it is easier.
         mean = x.mean(dim=(1, 2, 3), keepdim=True)
         std = x.std(dim=(1, 2, 3), keepdim=True)
@@ -725,7 +728,10 @@ class HDemucs(nn.Module):
             if self.hybrid and idx < len(self.tencoder):
                 # we have not yet merged branches.
                 lengths_t.append(xt.shape[-1])
+                
                 tenc = self.tencoder[idx]
+                if distrib.rank == 0:
+                    print(f"ln 724 before  t encode idx : {idx} xt.shape: {xt.shape}")
                 xt = tenc(xt)
                 if distrib.rank == 0:
                     print(f"ln 728 after  t encode idx : {idx} xt.shape: {xt.shape}")
@@ -735,8 +741,8 @@ class HDemucs(nn.Module):
                 else:
                     # tenc contains just the first conv., so that now time and freq.
                     # branches have the same shape and can be merged.
-                    if distrib.rank == 0:
-                        print(f"ln 732 tenc empty false idx : {idx} xt.shape: {xt.shape}")
+                    # if distrib.rank == 0:
+                    #     print(f"ln 732 tenc empty false idx : {idx} xt.shape: {xt.shape}")
                     inject = xt
             x = encode(x, inject)
             if distrib.rank == 0:
@@ -749,7 +755,8 @@ class HDemucs(nn.Module):
                 x = x + self.freq_emb_scale * emb
 
             saved.append(x)
-
+        # saved는 6개, saved_t는 4개인데, intermediate decoder에 saved하나 쓰이고, saved_t는 4 처음에 pre로 쓰여서
+        print(f"0------------------------------------------saved length {len(saved)} saved_t length {len(saved_t)}")
         x = torch.zeros_like(x)
         if self.hybrid:
             xt = torch.zeros_like(x)
@@ -764,22 +771,21 @@ class HDemucs(nn.Module):
             # which is used when the freq. and time branch separate.
 
             if self.hybrid:
-                if distrib.rank == 0:
-                    print(f"ln765 tencoder length {len(self.tdecoder)}")
+                # if distrib.rank == 0:
+                #     print(f"ln765 tencoder length {len(self.tdecoder)}")
                 offset = self.depth - len(self.tdecoder)
             if self.hybrid and idx >= offset:
                 tdec = self.tdecoder[idx - offset]
                 length_t = lengths_t.pop(-1)
                 if tdec.empty:
-                    if distrib.rank == 0:
-                        print(f"ln 772 when tdec is empty idx : {idx} pre shape {pre.shape}")
+                    # if distrib.rank == 0:
+                    #     print(f"ln 772 when tdec is empty idx : {idx} pre shape {pre.shape}")
                     assert pre.shape[2] == 1, pre.shape
                     pre = pre[:, :, 0]
                     xt, _ = tdec(pre, None, length_t)
                 else:
                     skip = saved_t.pop(-1)
                     xt, _ = tdec(xt, skip, length_t)
-
         # Let's make sure we used all stored skip connections.
         assert len(saved) == 0
         assert len(lengths_t) == 0

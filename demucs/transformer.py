@@ -341,6 +341,7 @@ class MyTransformerEncoderLayer(nn.TransformerEncoderLayer):
         if batch_first = False, src shape is (T, B, C)
         the case where batch_first=True is not covered
         """
+        # print(f"transformer ln 401 src shape: {src.shape}")
         device = src.device
         x = src
         T, B, C = x.shape

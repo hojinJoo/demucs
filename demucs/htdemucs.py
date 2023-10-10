@@ -271,7 +271,7 @@ class HTDemucs(nn.Module):
                 ker = freqs
                 pad = False
                 last_freq = True
-
+            # print(f"index : {index} last freq : {last_freq}")
             kw = {
                 "kernel_size": ker,
                 "stride": stri,
@@ -608,17 +608,19 @@ class HTDemucs(nn.Module):
         # if distrib.rank == 0:
         #     print("-------------------------------------------------------------")
         #     print(f"ln 602  before decoder x size : {x.size()} xt size : {xt.size()}")
+        # print(f"-------------------------------------\ntdecoder length : {len(self.tdecoder)}\n-------------------------------------")
         for idx, decode in enumerate(self.decoder):
             skip = saved.pop(-1)
             x, pre = decode(x, skip, lengths.pop(-1))
             # `pre` contains the output just before final transposed convolution,
             # which is used when the freq. and time branch separate.
-
+            
             offset = self.depth - len(self.tdecoder)
             if idx >= offset:
                 tdec = self.tdecoder[idx - offset]
                 length_t = lengths_t.pop(-1)
                 if tdec.empty:
+                    # print(f"empty here : {idx}")
                     assert pre.shape[2] == 1, pre.shape
                     pre = pre[:, :, 0]
                     xt, _ = tdec(pre, None, length_t)
