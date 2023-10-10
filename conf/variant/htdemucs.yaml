@@ -2,3 +2,12 @@
 
 model: htdemucs
 batch_size: 16
+
+# ema :
+#   epoch: [0.9,0.95]
+#   batch: [0.9995,0.9999]
+
+# epochs: 240
+
+# svd :
+#   penalty : 1e-5

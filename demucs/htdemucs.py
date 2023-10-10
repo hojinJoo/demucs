@@ -546,8 +546,8 @@ class HTDemucs(nn.Module):
         std = x.std(dim=(1, 2, 3), keepdim=True)
         x = (x - mean) / (1e-5 + std)
         # x will be the freq. branch input.
-        if distrib.rank == 0:
-            print(f"ln 513 x size : {x.size()}")
+        # if distrib.rank == 0:
+        #     print(f"ln 513 x size : {x.size()}")
         # Prepare the time branch input.
         xt = mix
         meant = xt.mean(dim=(1, 2), keepdim=True)
@@ -583,31 +583,31 @@ class HTDemucs(nn.Module):
                 x = x + self.freq_emb_scale * emb
 
             saved.append(x)
-        if distrib.rank == 0:
-            print(f"ln 585 x size : {x.size()}")
-            print(f"ln 586 xt size : {xt.size()}")
+        # if distrib.rank == 0:
+        #     print(f"ln 585 x size : {x.size()}")
+        #     print(f"ln 586 xt size : {xt.size()}")
         if self.crosstransformer:
             if self.bottom_channels:
-                if distrib.rank == 0:
-                    print(f"BOTTOM CHANNELS")
+                # if distrib.rank == 0:
+                #     print(f"BOTTOM CHANNELS")
                 b, c, f, t = x.shape
                 x = rearrange(x, "b c f t-> b c (f t)")
                 x = self.channel_upsampler(x)
                 x = rearrange(x, "b c (f t)-> b c f t", f=f)
                 xt = self.channel_upsampler_t(xt)
-            if distrib.rank == 0:
-                print(f"ln 594 x size : {x.size()} xt size : {xt.size()}")
+            # if distrib.rank == 0:
+            #     print(f"ln 594 x size : {x.size()} xt size : {xt.size()}")
             x, xt = self.crosstransformer(x, xt)
-            if distrib.rank == 0:
-                print(f"ln 595 after transformer x size : {x.size()} xt size : {xt.size()}")
+            # if distrib.rank == 0:
+            #     print(f"ln 595 after transformer x size : {x.size()} xt size : {xt.size()}")
             if self.bottom_channels:
                 x = rearrange(x, "b c f t-> b c (f t)")
                 x = self.channel_downsampler(x)
                 x = rearrange(x, "b c (f t)-> b c f t", f=f)
                 xt = self.channel_downsampler_t(xt)
-        if distrib.rank == 0:
-            print("-------------------------------------------------------------")
-            print(f"ln 602  before decoder x size : {x.size()} xt size : {xt.size()}")
+        # if distrib.rank == 0:
+        #     print("-------------------------------------------------------------")
+        #     print(f"ln 602  before decoder x size : {x.size()} xt size : {xt.size()}")
         for idx, decode in enumerate(self.decoder):
             skip = saved.pop(-1)
             x, pre = decode(x, skip, lengths.pop(-1))

@@ -471,8 +471,8 @@ class CrossTransformerEncoderLayer(nn.Module):
             mask: tensor of shape (T, S)
 
         """
-        if distrib.rank ==0 :
-            print(f"transformer ln 475 q shape: {q.shape} k shape: {k.shape}")
+        # if distrib.rank ==0 :
+        #     print(f"transformer ln 475 q shape: {q.shape} k shape: {k.shape}")
         device = q.device
         T, B, C = q.shape
         S, B, C = k.shape
@@ -500,15 +500,15 @@ class CrossTransformerEncoderLayer(nn.Module):
         else:
             x = self.norm1(q + self.gamma_1(self._ca_block(q, k, mask)))
             x = self.norm2(x + self.gamma_2(self._ff_block(x)))
-        if distrib.rank ==0 :
-            print(f"transformer ln 501 output shape: {x.shape}")
+        # if distrib.rank ==0 :
+        #     print(f"transformer ln 501 output shape: {x.shape}")
         return x
 
     # self-attention block
     def _ca_block(self, q, k, attn_mask=None):
         x = self.cross_attn(q, k, k, attn_mask=attn_mask, need_weights=False)[0]
-        if distrib.rank ==0 :
-            print(f"transformer ln 508 after ca block shape: {x.shape}")
+        # if distrib.rank ==0 :
+        #     print(f"transformer ln 508 after ca block shape: {x.shape}")
         return self.dropout1(x)
 
     # feed forward block
@@ -651,8 +651,8 @@ class CrossTransformerEncoder(nn.Module):
                 )
 
     def forward(self, x, xt):
-        if distrib.rank ==0 :
-            print(f"transformer ln 655 cross-transformer input x shape: {x.shape} xt shape: {xt.shape}")
+        # if distrib.rank ==0 :
+        #     print(f"transformer ln 655 cross-transformer input x shape: {x.shape} xt shape: {xt.shape}")
         B, C, Fr, T1 = x.shape
         pos_emb_2d = create_2d_sin_embedding(
             C, Fr, T1, x.device, self.max_period
@@ -668,8 +668,8 @@ class CrossTransformerEncoder(nn.Module):
         pos_emb = rearrange(pos_emb, "t2 b c -> b t2 c")
         xt = self.norm_in_t(xt)
         xt = xt + self.weight_pos_embed * pos_emb
-        if distrib.rank ==0 :
-            print(f"transformer ln 670 x shape: {x.shape} xt shape: {xt.shape}")
+        # if distrib.rank ==0 :
+        #     print(f"transformer ln 670 x shape: {x.shape} xt shape: {xt.shape}")
         for idx in range(self.num_layers):
             if idx % 2 == self.classic_parity:
                 x = self.layers[idx](x)

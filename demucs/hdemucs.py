@@ -18,7 +18,7 @@ from torch.nn import functional as F
 from .demucs import DConv, rescale_module
 from .states import capture_init
 from .spec import spectro, ispectro
-
+from . import distrib
 
 def pad1d(x: torch.Tensor, paddings: tp.Tuple[int, int], mode: str = 'constant', value: float = 0.):
     """Tiny wrapper around F.pad, just to allow for reflect padding on small input.
@@ -302,6 +302,10 @@ class HDecLayer(nn.Module):
             self.dconv = DConv(chin, **dconv_kw)
 
     def forward(self, x, skip, length):
+        if distrib.rank == 0:
+            print(f"hdemucs ln305 x.shape: {x.shape}")
+        if distrib.rank == 0 and skip is not None:
+            print(f"skip not None {skip.shape}") 
         if self.freq and x.dim() == 3:
             B, C, T = x.shape
             x = x.view(B, self.chin, -1, T)
@@ -695,7 +699,8 @@ class HDemucs(nn.Module):
         x = mag
 
         B, C, Fq, T = x.shape
-
+        if distrib.rank ==0 :
+            print(f"hdemucs ln 699 x.shape: {x.shape}")
         # unlike previous Demucs, we always normalize because it is easier.
         mean = x.mean(dim=(1, 2, 3), keepdim=True)
         std = x.std(dim=(1, 2, 3), keepdim=True)
@@ -722,14 +727,20 @@ class HDemucs(nn.Module):
                 lengths_t.append(xt.shape[-1])
                 tenc = self.tencoder[idx]
                 xt = tenc(xt)
+                if distrib.rank == 0:
+                    print(f"ln 728 after  t encode idx : {idx} xt.shape: {xt.shape}")
                 if not tenc.empty:
                     # save for skip connection
                     saved_t.append(xt)
                 else:
                     # tenc contains just the first conv., so that now time and freq.
                     # branches have the same shape and can be merged.
+                    if distrib.rank == 0:
+                        print(f"ln 732 tenc empty false idx : {idx} xt.shape: {xt.shape}")
                     inject = xt
             x = encode(x, inject)
+            if distrib.rank == 0:
+                print(f"ln 736 after spec encode idx : {idx} x.shape: {x.shape}")
             if idx == 0 and self.freq_emb is not None:
                 # add frequency embedding to allow for non equivariant convolutions
                 # over the frequency axis.
@@ -746,16 +757,22 @@ class HDemucs(nn.Module):
 
         for idx, decode in enumerate(self.decoder):
             skip = saved.pop(-1)
+            if distrib.rank == 0:
+                print(f"ln 758 before decode idx : {idx} x.shape: {x.shape} skip.shape: {skip.shape}")
             x, pre = decode(x, skip, lengths.pop(-1))
             # `pre` contains the output just before final transposed convolution,
             # which is used when the freq. and time branch separate.
 
             if self.hybrid:
+                if distrib.rank == 0:
+                    print(f"ln765 tencoder length {len(self.tdecoder)}")
                 offset = self.depth - len(self.tdecoder)
             if self.hybrid and idx >= offset:
                 tdec = self.tdecoder[idx - offset]
                 length_t = lengths_t.pop(-1)
                 if tdec.empty:
+                    if distrib.rank == 0:
+                        print(f"ln 772 when tdec is empty idx : {idx} pre shape {pre.shape}")
                     assert pre.shape[2] == 1, pre.shape
                     pre = pre[:, :, 0]
                     xt, _ = tdec(pre, None, length_t)
