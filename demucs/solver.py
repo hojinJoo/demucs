@@ -50,8 +50,9 @@ class Solver(object):
                     self.emas[kind].append(ModelEMA(self.model, decay, device=device))
 
         # data augment
-        augments = [augment.Shift(shift=int(args.dset.samplerate * args.dset.shift),
-                                  same=args.augment.shift_same)]
+        # augments = [augment.Shift(shift=int(args.dset.samplerate * args.dset.shift),
+        #                           same=args.augment.shift_same)]
+        augments = []
         if args.augment.flip:
             augments += [augment.FlipChannels(), augment.FlipSign()]
         for aug in ['scale', 'remix']:
@@ -188,6 +189,9 @@ class Solver(object):
         epoch = 0
         for epoch in range(len(self.history), self.args.epochs):
             # Train one epoch
+            # with torch.no_grad():
+            #     valid = self._run_one_epoch(epoch, train=False)
+
             self.model.train()  # Turn on BatchNorm & Dropout
             metrics = {}
             logger.info('-' * 70)
@@ -306,16 +310,20 @@ class Solver(object):
         for idx, sources in enumerate(logprog):
             sources = sources.to(self.device)
             if train:
+                # print(f"before augment sources shape {sources.shape}")
                 sources = self.augment(sources)
                 mix = sources.sum(dim=1)
+                # print(f"when train sources shape {mix.shape}")
             else:
-                print(f"solver ln 312 sources shape {sources.shape}")
                 mix = sources[:, 0]
                 sources = sources[:, 1:]
+                # print(f"solver ln 312 sources shape {mix.shape}")
 
             if not train and self.args.valid_apply:
+                # print("valid 여기임")
                 estimate = apply_model(self.model, mix, split=self.args.test.split, overlap=0)
             else:
+                # print("여기임")
                 estimate = self.dmodel(mix)
             if train and hasattr(self.model, 'transform_target'):
                 sources = self.model.transform_target(mix, sources)

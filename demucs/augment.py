@@ -46,6 +46,7 @@ class FlipChannels(nn.Module):
             left = left.expand(-1, -1, -1, time)
             right = 1 - left
             wav = th.cat([wav.gather(2, left), wav.gather(2, right)], dim=2)
+        
         return wav
 
 
@@ -108,4 +109,5 @@ class Scale(nn.Module):
         if self.training and random.random() < self.proba:
             scales = th.empty(batch, streams, 1, 1, device=device).uniform_(self.min, self.max)
             wav *= scales
+        
         return wav

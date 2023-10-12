@@ -3,11 +3,11 @@
 model: hdemucs
 batch_size: 16
 
-ema :
-  epoch: [0.9,0.95]
-  batch: [0.9995,0.9999]
+# ema :
+#   epoch: [0.9,0.95]
+#   batch: [0.9995,0.9999]
 
-epochs: 600
+# epochs: 600
 
-svd :
-  penalty : 1e-5
+# svd :
+#   penalty : 1e-5

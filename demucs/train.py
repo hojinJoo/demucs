@@ -25,6 +25,7 @@ from .wav import get_wav_datasets, get_musdb_wav_datasets
 from .demucs import Demucs
 from .hdemucs import HDemucs
 from .htdemucs import HTDemucs
+from .hdemucs_slot import HDemucsSlot
 from .repitch import RepitchedWrapper
 from .solver import Solver
 from .states import capture_init
@@ -59,13 +60,14 @@ def get_model(args):
         'sources': list(args.dset.sources),
         'audio_channels': args.dset.channels,
         'samplerate': args.dset.samplerate,
-        'segment': args.model_segment or 4 * args.dset.segment,
+        'segment': args.model_segment or  args.dset.segment,
     }
     klass = {
         'demucs': Demucs,
         'hdemucs': HDemucs,
         'htdemucs': HTDemucs,
         'torch_hdemucs': TorchHDemucsWrapper,
+        'hdemucs_slot' : HDemucsSlot,
     }[args.model]
     kw = OmegaConf.to_container(getattr(args, args.model), resolve=True)
     model = klass(**extra, **kw)

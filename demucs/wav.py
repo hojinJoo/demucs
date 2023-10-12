@@ -148,7 +148,7 @@ class Wavset:
             else:
                 examples = int(math.ceil((track_duration - self.segment) / self.shift) + 1)
             self.num_examples.append(examples)
-
+        
     def __len__(self):
         return sum(self.num_examples)
 
@@ -179,8 +179,10 @@ class Wavset:
                 example = (example - meta['mean']) / meta['std']
             if self.segment:
                 length = int(self.segment * self.samplerate)
+                # print(f"length : {length}")
                 example = example[..., :length]
                 example = F.pad(example, (0, length - example.shape[-1]))
+            # print(f"example size : {example.shape}")
             return example
 
 

@@ -34,6 +34,7 @@ class RepitchedWrapper:
 
     def __getitem__(self, index):
         streams = self.dataset[index]
+        # print(f"before repitch : {streams.size()}")
         in_length = streams.shape[-1]
         out_length = int((1 - 0.01 * self.max_tempo) * in_length)
 
@@ -53,6 +54,7 @@ class RepitchedWrapper:
             streams = torch.stack(outs)
         else:
             streams = streams[..., :out_length]
+        # print(f"out repitch : {streams.size()}")
         return streams
 
 
