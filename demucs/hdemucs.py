@@ -730,11 +730,11 @@ class HDemucs(nn.Module):
                 lengths_t.append(xt.shape[-1])
                 
                 tenc = self.tencoder[idx]
-                if distrib.rank == 0:
-                    print(f"ln 724 before  t encode idx : {idx} xt.shape: {xt.shape}")
+                # if distrib.rank == 0:
+                #     print(f"ln 724 before  t encode idx : {idx} xt.shape: {xt.shape}")
                 xt = tenc(xt)
-                if distrib.rank == 0:
-                    print(f"ln 728 after  t encode idx : {idx} xt.shape: {xt.shape}")
+                # if distrib.rank == 0:
+                #     print(f"ln 728 after  t encode idx : {idx} xt.shape: {xt.shape}")
                 if not tenc.empty:
                     # save for skip connection
                     saved_t.append(xt)
@@ -745,8 +745,8 @@ class HDemucs(nn.Module):
                     #     print(f"ln 732 tenc empty false idx : {idx} xt.shape: {xt.shape}")
                     inject = xt
             x = encode(x, inject)
-            if distrib.rank == 0:
-                print(f"ln 736 after spec encode idx : {idx} x.shape: {x.shape}")
+            # if distrib.rank == 0:
+            #     print(f"ln 736 after spec encode idx : {idx} x.shape: {x.shape}")
             if idx == 0 and self.freq_emb is not None:
                 # add frequency embedding to allow for non equivariant convolutions
                 # over the frequency axis.
@@ -756,7 +756,7 @@ class HDemucs(nn.Module):
 
             saved.append(x)
         # saved는 6개, saved_t는 4개인데, intermediate decoder에 saved하나 쓰이고, saved_t는 4 처음에 pre로 쓰여서
-        print(f"0------------------------------------------saved length {len(saved)} saved_t length {len(saved_t)}")
+        # print(f"0------------------------------------------saved length {len(saved)} saved_t length {len(saved_t)}")
         x = torch.zeros_like(x)
         if self.hybrid:
             xt = torch.zeros_like(x)
@@ -764,8 +764,8 @@ class HDemucs(nn.Module):
 
         for idx, decode in enumerate(self.decoder):
             skip = saved.pop(-1)
-            if distrib.rank == 0:
-                print(f"ln 758 before decode idx : {idx} x.shape: {x.shape} skip.shape: {skip.shape}")
+            # if distrib.rank == 0:
+            #     print(f"ln 758 before decode idx : {idx} x.shape: {x.shape} skip.shape: {skip.shape}")
             x, pre = decode(x, skip, lengths.pop(-1))
             # `pre` contains the output just before final transposed convolution,
             # which is used when the freq. and time branch separate.
