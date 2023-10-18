@@ -26,8 +26,10 @@ from .demucs import Demucs
 from .hdemucs import HDemucs
 from .htdemucs import HTDemucs
 from .hdemucs_slot import HDemucsSlot
+from .hdemucs_slot_ctr import HDemucsSlotCtr
 from .repitch import RepitchedWrapper
 from .solver import Solver
+from .solver_ctr import SolverCtr
 from .states import capture_init
 from .utils import random_subset
 
@@ -68,6 +70,7 @@ def get_model(args):
         'htdemucs': HTDemucs,
         'torch_hdemucs': TorchHDemucsWrapper,
         'hdemucs_slot' : HDemucsSlot,
+        'hdemucs_slot_ctr' : HDemucsSlotCtr
     }[args.model]
     kw = OmegaConf.to_container(getattr(args, args.model), resolve=True)
     model = klass(**extra, **kw)
@@ -203,6 +206,9 @@ def get_solver(args, model_only=False):
     loaders = {"train": train_loader, "valid": valid_loader}
 
     # Construct Solver
+    if args.model == "hdemucs_slot_ctr" :
+        print(f"args {args}")
+        return SolverCtr(loaders, model, optimizer, args)
     return Solver(loaders, model, optimizer, args)
 
 

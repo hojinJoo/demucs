@@ -54,6 +54,7 @@ class SlotAttention(nn.Module):
         hid_dim: int = 768,
         mlp_hid_dim: int = 1536,
         eps: float = 1e-8,
+        ctr = False
     ):
         super().__init__()
 
@@ -87,7 +88,7 @@ class SlotAttention(nn.Module):
             nn.Linear(self.mlp_hid_dim, self.slot_dim),
         )
 
-    def forward(self, inputs, num_slots=None, train=False):
+    def forward(self, inputs, num_slots=None, train=False,ctr=False):
         outputs = dict()
 
         B, N_in, D_in = inputs.shape
@@ -228,20 +229,26 @@ class SlotDecoder(nn.Module) :
         dec_init_size_f: int = 16,
         dec_init_size_t: int = 2,
         dec_depth: int = 6,
+        ctr = False
     ):
         super().__init__()
         self.num_slots = num_slots
-        self.slot_attention = SlotAttention(num_slots,num_iterations,num_attn_heads,slot_dim,hid_dim,mlp_hid_dim,eps)
+        self.ctr= ctr
+        self.slot_attention = SlotAttention(num_slots,num_iterations,num_attn_heads,slot_dim,hid_dim,mlp_hid_dim,eps,ctr=ctr)
         self.decoder = Decoder(t_size,slot_dim,dec_hid_dim,dec_init_size_f,dec_init_size_t,dec_depth)
     def forward(self,inputs,ft,num_slots=None,train=True) :
         # ft는 fianl output size
         B,C,T = inputs.shape
         inputs = inputs.permute(0,2,1)
-        out = self.slot_attention(inputs,num_slots,train)
+        out = self.slot_attention(inputs,num_slots,train,ctr=self.ctr)
+        if train and self.ctr :
+            slots = out['slots']
         # B,n_slots,slot_dim = out['slots'].shape
         out = self.decoder(out['slots'],ft)
         # print(f"ft : {ft}")
         out = out.reshape(B,self.num_slots,ft[0],ft[1],4).permute(0,1,4,2,3)
+        if train and self.ctr : 
+            return out, slots
         return out
         
 if __name__ == "__main__" :
