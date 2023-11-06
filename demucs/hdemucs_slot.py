@@ -771,6 +771,7 @@ class HDemucsSlot(nn.Module):
             x, pre = decode(x, skip, lengths.pop(-1))
             if idx ==0 :
                 feat_slot = x
+                
             # if distrib.rank == 0:
             #     print(f"ln 758 after decode idx : {idx} x.shape: {x.shape} skip.shape: {skip.shape}")
             # `pre` contains the output just before final transposed convolution,
@@ -794,7 +795,7 @@ class HDemucsSlot(nn.Module):
                     xt, _ = tdec(xt, skip, length_t)
                     # if distrib.rank == 0:
                     #     print(f"ln 772 when tdec is not empty idx : {idx} xt shape {xt.shape}")
-                    
+        
         # Let's make sure we used all stored skip connections.
         assert len(saved) == 0
         assert len(lengths_t) == 0

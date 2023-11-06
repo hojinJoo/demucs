@@ -103,7 +103,7 @@ class Solver(object):
 
     def _reset(self):
         """Reset state of the solver, potentially using checkpoint."""
-        if self.checkpoint_file.exists():
+        if self.checkpoint_file.exists() and  self.args.continue_exist:
             logger.info(f'Loading checkpoint model: {self.checkpoint_file}')
             package = torch.load(self.checkpoint_file, 'cpu')
             self.model.load_state_dict(package['state'])

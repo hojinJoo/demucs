@@ -3,6 +3,13 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
+
+
+"""
+Slot 차원 바꾼 버전
+"""
+
+
 """
 This code contains the spectrogram and Hybrid version of Demucs.
 """
@@ -19,7 +26,7 @@ from .demucs import DConv, rescale_module
 from .states import capture_init
 from .spec import spectro, ispectro
 from . import distrib
-from .slots import SlotDecoder
+from .slots_2 import SlotDecoder
 
 
 def pad1d(x: torch.Tensor, paddings: tp.Tuple[int, int], mode: str = 'constant', value: float = 0.):
@@ -341,7 +348,7 @@ class HDecLayer(nn.Module):
         return z, y
 
 
-class HDemucsSlotCtr(nn.Module):
+class HDemucsSlot_tr(nn.Module):
     """
     Spectrogram and hybrid Demucs model.
     The spectrogram model has the same structure as Demucs, except the first few layers are over the
@@ -371,7 +378,6 @@ class HDemucsSlotCtr(nn.Module):
     @capture_init
     def __init__(self,
                  sources,
-                 name="hdemucs_slot_ctr",
                  # Channels
                  audio_channels=2,
                  channels=48,
@@ -414,11 +420,7 @@ class HDemucsSlotCtr(nn.Module):
                  rescale=0.1,
                  # Metadata
                  samplerate=44100,
-                 segment=4 * 10,   
-                 dconv_hid_dim = 1024,
-                 slot_dim = 384,
-                 hid_dim = 384,
-                 mlp_hid_dim = 768):
+                 segment=4 * 10):
         """
         Args:
             sources (list[str]): list of source names.
@@ -464,7 +466,6 @@ class HDemucsSlotCtr(nn.Module):
         """
         super().__init__()
         self.cac = cac
-        self.name = name
         self.wiener_residual = wiener_residual
         self.audio_channels = audio_channels
         self.sources = sources
@@ -489,7 +490,7 @@ class HDemucsSlotCtr(nn.Module):
 
         self.encoder = nn.ModuleList()
         self.decoder = nn.ModuleList()
-        self.slot_attention = SlotDecoder(ctr=True,dec_hid_dim = dconv_hid_dim,slot_dim = slot_dim,hid_dim = hid_dim,mlp_hid_dim = mlp_hid_dim)
+        self.slot_attention = SlotDecoder()
         if hybrid:
             self.tencoder = nn.ModuleList()
             self.tdecoder = nn.ModuleList()
@@ -708,7 +709,8 @@ class HDemucsSlotCtr(nn.Module):
         z = self._spec(mix)
         mag = self._magnitude(z).to(mix.device)
         x = mag
-        
+        # if distrib.rank ==0 :
+        #     print(f"x.shape: {x.shape}")
         B, C, Fq, T = x.shape
         # if distrib.rank ==0 :
         #     print(f"hdemucs ln 699 x.shape: {x.shape}")
@@ -805,7 +807,7 @@ class HDemucsSlotCtr(nn.Module):
         assert len(lengths_t) == 0
         assert len(saved_t) == 0
         
-        slot_out,slots = self.slot_attention(feat_slot,(Fq,T))
+        slot_out = self.slot_attention(feat_slot,(Fq,T))
         slot_out = slot_out * std[:, None] + mean[:, None]
         
         S = len(self.sources)
@@ -834,4 +836,4 @@ class HDemucsSlotCtr(nn.Module):
             xt = xt.view(B, S, -1, length)
             xt = xt * stdt[:, None] + meant[:, None]
             x = xt + x  + slot_out
-        return x, slots
+        return x

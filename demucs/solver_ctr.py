@@ -72,7 +72,7 @@ class SolverCtr(object):
 
         self.link = xp.link
         self.history = self.link.history
-
+        self.cross_entropy = torch.nn.CrossEntropyLoss()
         self._reset()
 
     def _serialize(self, epoch):
@@ -103,7 +103,7 @@ class SolverCtr(object):
 
     def _reset(self):
         """Reset state of the solver, potentially using checkpoint."""
-        if self.checkpoint_file.exists():
+        if self.checkpoint_file.exists() and self.args.continue_exist:
             logger.info(f'Loading checkpoint model: {self.checkpoint_file}')
             package = torch.load(self.checkpoint_file, 'cpu')
             self.model.load_state_dict(package['state'])
@@ -169,7 +169,9 @@ class SolverCtr(object):
             if key in metrics:
                 losses[key] = format(metrics[key], '.3f')
         return losses
-
+    
+    
+        
     def train(self):
         # Optimizing the model
         if self.history:
@@ -292,18 +294,82 @@ class SolverCtr(object):
             if is_last:
                 break
     
+    def l2_normalize(self,x) :
+        norm = torch.linalg.norm(x,dim=-1,keepdim=True)
+        return x / norm.clamp(min=1e-10)
+
+    def cos_pairwise(self,x,y=None) :
+        x = self.l2_normalize(x)
+        y = self.l2_normalize(y) if y is not None else x
+        N = x.shape[:-1]
+        M = y.shape[:-1]
+        x = x.flatten(end_dim=-2)
+        y = y.flatten(end_dim=-2)
+        cos = torch.einsum("nc,mc->nm", x,y)
+
+        return cos.reshape(N+M)
     
-    def get_positive_samples(self,size) :
-        # size : [B,n_slots,Feat]
-        # sample along B axis
-        # randomly pick n_slots samples along batch axis
+    def get_positive_pair(self,size,batch_count) :
+        if batch_count < size[1] :
+            slot_idx = torch.randperm(size[1])[:batch_count]
+        else :
+            slot_idx = torch.arange(size[1])
+        batch_idx = self.get_batch_idx(size,batch_count)
+        positive = torch.stack([batch_idx[:,0],slot_idx,batch_idx[:,1],slot_idx],dim=-1)
+        return positive
+
+
+    def get_inter_negative_pair(self,size,batch_count,slot_count) :
+        slot_idx = torch.stack( [ torch.stack([torch.randperm(size[1])[:2] for _ in range(slot_count)],dim=0)  for _ in range(batch_count)] ,dim=0)
+        batch_idx = torch.stack([torch.randperm(size[0])[:1] for _ in range(batch_count)],dim=0)
+        
+        inter_negative_pair = []
+        for b in range(batch_count) :
+            for s in range(slot_count) :
+                inter_negative_pair.append(torch.stack([batch_idx[b,0],slot_idx[b,s,0],batch_idx[b,0],slot_idx[b,s,1]],dim=0))
+        inter_negative_pair = torch.stack(inter_negative_pair,dim=0)
+        
+        return inter_negative_pair
+        
+    def get_intra_negative_pair(self,size,batch_count,slot_count) :
+        slot_idx = torch.stack( [ torch.stack([torch.randperm(size[1])[:2] for _ in range(slot_count)],dim=0)  for _ in range(batch_count)] ,dim=0)
+        
+        batch_idx = self.get_batch_idx(size,batch_count)
         
         
-        pass
-    
-    def get_negative_samples(self,size) :
-        # size : [B,n_slots,Feat]
-        pass
+        inter_negative = []
+        for b in range(batch_count) :
+            for s in range(slot_count) :
+        
+                inter_negative.append(torch.stack([batch_idx[b,0],slot_idx[b,s,0],batch_idx[b,1],slot_idx[b,s,1]],dim=0))
+        intra_negative = torch.stack(inter_negative,dim=0)
+        
+        return intra_negative
+        
+    def get_batch_idx(self,size,counts) :
+        b,n_s,d = size 
+        batch_idx = torch.stack([torch.randperm(b)[:2] for _ in range(counts) ],dim=0)
+        return batch_idx
+
+    def get_ctr_loss(self,data,batch_count,slot_count) :
+        B,N,D = data.shape
+        cos = self.cos_pairwise(data)
+        positives = self.get_positive_pair(data.size(),batch_count)
+        
+        negative_inter = self.get_inter_negative_pair(data.size(),slot_count,batch_count)
+        negative_intra = self.get_intra_negative_pair(data.size(),slot_count,batch_count)
+        
+        negatives = torch.cat([negative_inter,negative_intra],dim=0)
+        
+        cos_pos = cos[positives[:,0],positives[:,1],positives[:,2],positives[:,3]]
+        cos_neg = cos[negatives[:,0],negatives[:,1],negatives[:,2],negatives[:,3]]
+        
+        logit = torch.cat([cos_pos,cos_neg],dim=0)
+        labels = torch.cat((torch.ones_like(cos_pos,device=logit.device),torch.zeros_like(cos_neg,device=logit.device)),dim=0)
+
+        
+        return logit,labels
+        
     def _run_one_epoch(self, epoch, train=True):
         args = self.args
         data_loader = self.loaders['train'] if train else self.loaders['valid']
@@ -356,9 +422,15 @@ class SolverCtr(object):
                 reco = reco.mean(0)
             else:
                 raise ValueError(f"Invalid loss {self.args.loss}")
+            if train :
+                ctr_logit,ctr_label = self.get_ctr_loss(slots,self.args.ctr.inter_negative.batch_count,self.args.ctr.inter_negative.slot_count)
+                ctr_loss = self.cross_entropy(ctr_logit,ctr_label)
+            
             weights = torch.tensor(args.weights).to(sources)
-            loss = (loss * weights).sum() / weights.sum()
+            loss = (loss * weights).sum() / weights.sum() 
 
+            if train :
+                loss +=  ctr_loss * 0.1
             ms = 0
             if self.quantizer is not None:
                 ms = self.quantizer.model_size()
@@ -368,7 +440,9 @@ class SolverCtr(object):
             losses = {}
             losses['reco'] = (reco * weights).sum() / weights.sum()
             losses['ms'] = ms
-
+            if train : 
+                losses['ctr'] = ctr_loss
+            
             if not train:
                 nsdrs = new_sdr(sources, estimate.detach()).mean(0)
                 total = 0

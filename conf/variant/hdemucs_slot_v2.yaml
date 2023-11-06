@@ -1,6 +1,6 @@
 # @package _global_
 
-model: hdemucs_slot
+model: hdemucs_slot_v2
 batch_size: 16
 dset :
   segment : 5.94

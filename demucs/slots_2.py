@@ -3,6 +3,9 @@ import torch
 from torch import nn
 import numpy as np
 
+"""
+Slot 순서 바꾼 버전
+"""
 
 
 class SoftPositionEmbed(nn.Module):

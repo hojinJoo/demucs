@@ -1,7 +1,7 @@
 # @package _global_
 
 model: hdemucs_slot_ctr
-batch_size: 4
+batch_size: 16
 dset :
   segment : 5.94
 
@@ -27,4 +27,11 @@ ctr :
     slot_count : 2
     batch_count : 4
 
-  
+continue_exist : true
+
+hdemucs_slot_ctr : 
+  channels : 24
+  dconv_hid_dim : 100
+  slot_dim : 384
+  hid_dim : 384
+  mlp_hid_dim : 384
