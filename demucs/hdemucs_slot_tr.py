@@ -26,7 +26,7 @@ from .demucs import DConv, rescale_module
 from .states import capture_init
 from .spec import spectro, ispectro
 from . import distrib
-from .slots_2 import SlotDecoder
+from .slots_tr import SlotDecoder
 
 
 def pad1d(x: torch.Tensor, paddings: tp.Tuple[int, int], mode: str = 'constant', value: float = 0.):

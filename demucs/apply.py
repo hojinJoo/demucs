@@ -327,7 +327,7 @@ def apply_model(model: tp.Union[BagOfModels, Model],
             except Exception:
                 pass
         with th.no_grad():
-            out,_ = model(padded_mix)
+            out = model(padded_mix)
         with lock:
             try:
                 callback(_replace_dict(callback_arg, ("state", "end")))  # type: ignore

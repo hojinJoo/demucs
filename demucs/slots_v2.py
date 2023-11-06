@@ -223,9 +223,9 @@ class SlotDecoder(nn.Module) :
         num_slots: int = 4,
         num_iterations: int = 3,
         num_attn_heads: int = 1,
-        slot_dim: int = 768,
-        hid_dim: int = 768,
-        mlp_hid_dim: int = 768,
+        slot_dim: int = 192,
+        hid_dim: int = 192,
+        mlp_hid_dim: int = 384,
         eps: float = 1e-8,
         t_size: int = 256,
         dec_hid_dim: int = 64,
@@ -234,6 +234,8 @@ class SlotDecoder(nn.Module) :
         dec_depth: int = 6,
         ctr = False
     ):
+        #feat slot size torch.Size([4, 192, 32, 256])
+        # torch.Size([4, 16, 2048, 256]) 
         super().__init__()
         self.num_slots = num_slots
         self.ctr= ctr
@@ -241,8 +243,9 @@ class SlotDecoder(nn.Module) :
         self.decoder = Decoder(t_size,slot_dim,dec_hid_dim,dec_init_size_f,dec_init_size_t,dec_depth)
     def forward(self,inputs,ft,num_slots=None,train=True) :
         # ft는 fianl output size
-        B,C,T = inputs.shape
-        inputs = inputs.permute(0,2,1)
+        B,C,Fr,T = inputs.shape
+        inputs = inputs.permute(0,2,3,1)
+        inputs = torch.flatten(inputs,1,2)
         out = self.slot_attention(inputs,num_slots,train,ctr=self.ctr)
         if train and self.ctr :
             slots = out['slots']

@@ -1,5 +1,5 @@
 # @package _global_
-
+#slot 위치 변경
 model: hdemucs_slot_v2
 batch_size: 16
 dset :
@@ -16,4 +16,3 @@ augment :
 svd :
   penalty : 1e-5
 
-continue_exist : false
