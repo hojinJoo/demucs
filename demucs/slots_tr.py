@@ -2,7 +2,10 @@ from typing import Any, Dict, Optional, Tuple
 import torch
 from torch import nn
 import numpy as np
-
+from . import distrib
+"""
+Slot 순서 바꾼 버전
+"""
 
 
 class SoftPositionEmbed(nn.Module):
@@ -194,9 +197,9 @@ class Decoder(nn.Module):
             )
             count_layer += 1
 
-        deconvs.append(nn.ConvTranspose2d(D_hid, 4, 3, stride=(1, 1), padding=1))
+        deconvs.append(nn.ConvTranspose2d(D_hid, 16, 3, stride=(1, 1), padding=1))
         self.deconvs = nn.Sequential(*deconvs)
-
+        
     def forward(self, x,ft):
         """Broadcast slot features to a 2D grid and collapse slot dimension."""
         # print(f"x size : {x.size()}")
@@ -206,6 +209,8 @@ class Decoder(nn.Module):
         x = x.permute(0, 3, 1, 2)
         x = self.deconvs(x)
         # print(f"after deconv ln 207 : {x.size()}")
+        if distrib.rank ==0 : 
+            print(f"x size : {x.size()}")
         x = x[:, :, : ft[0], : ft[1]]
         # print(f"ft : {ft}")
         x = x.permute(0, 2, 3, 1)
@@ -217,35 +222,39 @@ class Decoder(nn.Module):
 class SlotDecoder(nn.Module) : 
     def __init__(
         self,
-        num_slots: int = 4,
+        num_slots: int = 16,
         num_iterations: int = 3,
         num_attn_heads: int = 1,
-        slot_dim: int = 768,
-        hid_dim: int = 768,
-        mlp_hid_dim: int = 768,
+        slot_dim: int = 192,
+        hid_dim: int = 192,
+        mlp_hid_dim: int = 4,
         eps: float = 1e-8,
-        t_size: int = 256,
+        img_size: int = 4, # 여기 수정하기
         dec_hid_dim: int = 64,
         dec_init_size_f: int = 16,
         dec_init_size_t: int = 2,
         dec_depth: int = 6,
         ctr = False
     ):
+        #feat slot size torch.Size([4, 192, 32, 256])
+        # torch.Size([4, 16, 2048, 256]) 
         super().__init__()
         self.num_slots = num_slots
         self.ctr= ctr
         self.slot_attention = SlotAttention(num_slots,num_iterations,num_attn_heads,slot_dim,hid_dim,mlp_hid_dim,eps,ctr=ctr)
-        self.decoder = Decoder(t_size,slot_dim,dec_hid_dim,dec_init_size_f,dec_init_size_t,dec_depth)
+        self.decoder = Decoder(img_size,slot_dim,dec_hid_dim,dec_init_size_f,dec_init_size_t,dec_depth)
     def forward(self,inputs,ft,num_slots=None,train=True) :
         # ft는 fianl output size
-        B,C,T = inputs.shape
-        inputs = inputs.permute(0,2,1)
+        B,C,Fr,T = inputs.shape
+        inputs = inputs.permute(0,2,3,1)
+        inputs = torch.flatten(inputs,1,2)
         out = self.slot_attention(inputs,num_slots,train,ctr=self.ctr)
         if train and self.ctr :
             slots = out['slots']
         # B,n_slots,slot_dim = out['slots'].shape
         out = self.decoder(out['slots'],ft)
         # print(f"ft : {ft}")
+        print(f"out : {out.size()}")
         out = out.reshape(B,self.num_slots,ft[0],ft[1],4).permute(0,1,4,2,3)
         if train and self.ctr : 
             return out, slots

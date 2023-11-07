@@ -27,6 +27,7 @@ from .hdemucs import HDemucs
 from .htdemucs import HTDemucs
 from .hdemucs_slot import HDemucsSlot
 from .hdemucs_slot_v2 import HDemucsSlot2
+from .hdemucs_slot_tr import HDemucsSlot_tr
 from .hdemucs_slot_ctr import HDemucsSlotCtr
 from .repitch import RepitchedWrapper
 from .solver import Solver
@@ -72,7 +73,8 @@ def get_model(args):
         'torch_hdemucs': TorchHDemucsWrapper,
         'hdemucs_slot' : HDemucsSlot,
         'hdemucs_slot_ctr' : HDemucsSlotCtr,
-        'hdemucs_slot_v2' : HDemucsSlot2
+        'hdemucs_slot_v2' : HDemucsSlot2,
+        'hdemucs_slot_tr': HDemucsSlot_tr
     }[args.model]
     kw = OmegaConf.to_container(getattr(args, args.model), resolve=True)
     model = klass(**extra, **kw)
