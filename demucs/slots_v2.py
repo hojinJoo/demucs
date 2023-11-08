@@ -223,15 +223,15 @@ class SlotDecoder(nn.Module) :
         num_slots: int = 4,
         num_iterations: int = 3,
         num_attn_heads: int = 1,
-        slot_dim: int = 192,
-        hid_dim: int = 192,
-        mlp_hid_dim: int = 384,
+        slot_dim: int = 96,
+        hid_dim: int = 96,
+        mlp_hid_dim: int = 182,
         eps: float = 1e-8,
         t_size: int = 256,
-        dec_hid_dim: int = 64,
+        dec_hid_dim: int = 256,
         dec_init_size_f: int = 16,
         dec_init_size_t: int = 2,
-        dec_depth: int = 6,
+        dec_depth: int = 8,
         ctr = False
     ):
         #feat slot size torch.Size([4, 192, 32, 256])

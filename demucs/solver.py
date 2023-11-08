@@ -33,6 +33,7 @@ class Solver(object):
         self.loaders = loaders
 
         self.model = model
+        print(self.model)
         self.optimizer = optimizer
         self.quantizer = states.get_quantizer(self.model, args.quant, self.optimizer)
         self.dmodel = distrib.wrap(model)
