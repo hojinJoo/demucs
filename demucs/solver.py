@@ -376,7 +376,7 @@ class Solver(object):
 
             # optimize model in training mode
             if train:
-                torch.cuda.empty_cache()
+                # torch.cuda.empty_cache()
                 loss.backward()
                 grad_norm = 0
                 grads = []

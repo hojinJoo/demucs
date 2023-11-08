@@ -29,7 +29,7 @@ test:
   save: False
   best: True
   workers: 2
-  every: 50
+  every: 30
   split: true
   shifts: 1
   overlap: 0.25
@@ -64,7 +64,7 @@ augment:
     max_tempo: 12
   remix:
     proba: 1
-    group_size: 2
+    group_size: 1
   scale:
     proba: 1
     min: 0.25
@@ -247,7 +247,7 @@ hdemucs_slot_ctr :
   rescale: 0.1
 
 hdemucs_slot_tr : 
-  channels: 12
+  channels: 24
   channels_time:
   growth: 2
   # STFT

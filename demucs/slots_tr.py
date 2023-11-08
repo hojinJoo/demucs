@@ -224,14 +224,14 @@ class SlotDecoder(nn.Module) :
         num_slots: int = 16,
         num_iterations: int = 3,
         num_attn_heads: int = 1,
-        slot_dim: int = 24,
-        hid_dim: int = 24,
-        mlp_hid_dim: int = 96,
+        slot_dim: int = 96,
+        hid_dim: int = 96,
+        mlp_hid_dim: int = 192,
         eps: float = 1e-8,
-        img_size: int = 128, # 여기 수정하기
+        img_size: int = 256, # 여기 수정하기
         dec_hid_dim: int = 128,
         dec_init_size_f: int = 16,
-        dec_init_size_t: int = 1,
+        dec_init_size_t: int = 2,
         dec_depth: int = 6,
         ctr = False
     ):

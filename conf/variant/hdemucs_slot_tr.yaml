@@ -1,10 +1,10 @@
 # @package _global_
 #slot 위치 변경
-# config에서 기존 모델 1/4로 줄이고 depth도 1개 줄이고, 배치도 반, segment도 반으로 줄임
+# config에서 기존 모델 1/2로 줄이고 , 배치도 1/4
 model: hdemucs_slot_tr
-batch_size: 8
+batch_size: 4
 dset :
-  segment : 2.97
+  segment : 5.94
 
 ema :
   epoch: [0.9,0.95]
@@ -17,3 +17,4 @@ augment :
 svd :
   penalty : 1e-5
 
+continue_exist : false
