@@ -247,7 +247,7 @@ hdemucs_slot_ctr :
   rescale: 0.1
 
 hdemucs_slot_tr : 
-  channels: 48
+  channels: 12
   channels_time:
   growth: 2
   # STFT
@@ -275,7 +275,7 @@ hdemucs_slot_tr :
   context_enc: 0
   # normalization
   norm_starts: 4
-  norm_groups: 4
+  norm_groups: 2
   # DConv residual branch
   dconv_mode: 1
   dconv_depth: 2

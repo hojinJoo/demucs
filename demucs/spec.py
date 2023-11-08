@@ -45,3 +45,11 @@ def ispectro(z, hop_length=None, length=None, pad=0):
                  center=True)
     _, length = x.shape
     return x.view(*other, length)
+
+
+if __name__ == "__main__" :
+    import torch
+    # "test ispectro"
+    sampleAudio = torch.rand(3,4,768,15,dtype=torch.complex64)
+    print(ispectro(sampleAudio).size())
+    

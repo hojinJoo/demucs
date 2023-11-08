@@ -33,7 +33,6 @@ class Solver(object):
         self.loaders = loaders
 
         self.model = model
-        print(self.model)
         self.optimizer = optimizer
         self.quantizer = states.get_quantizer(self.model, args.quant, self.optimizer)
         self.dmodel = distrib.wrap(model)
@@ -377,6 +376,7 @@ class Solver(object):
 
             # optimize model in training mode
             if train:
+                torch.cuda.empty_cache()
                 loss.backward()
                 grad_norm = 0
                 grads = []

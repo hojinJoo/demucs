@@ -131,7 +131,7 @@ class SlotAttention(nn.Module):
             updates = torch.einsum("bhij,bhid->bhjd", attn, v)
             # updates: (B, N_heads, K, slot_D // N_heads)
             updates = updates.transpose(1, 2).reshape(B, K, -1)
-            # updates: (B, K, slot_D)
+            # updates: (B, K, slot_D)doc
 
             slots = self.gru(updates.reshape(-1, D_slot), slots_prev.reshape(-1, D_slot))
 
@@ -209,8 +209,7 @@ class Decoder(nn.Module):
         x = x.permute(0, 3, 1, 2)
         x = self.deconvs(x)
         # print(f"after deconv ln 207 : {x.size()}")
-        if distrib.rank ==0 : 
-            print(f"x size : {x.size()}")
+
         x = x[:, :, : ft[0], : ft[1]]
         # print(f"ft : {ft}")
         x = x.permute(0, 2, 3, 1)
@@ -225,14 +224,14 @@ class SlotDecoder(nn.Module) :
         num_slots: int = 16,
         num_iterations: int = 3,
         num_attn_heads: int = 1,
-        slot_dim: int = 192,
-        hid_dim: int = 192,
-        mlp_hid_dim: int = 4,
+        slot_dim: int = 24,
+        hid_dim: int = 24,
+        mlp_hid_dim: int = 96,
         eps: float = 1e-8,
-        img_size: int = 4, # 여기 수정하기
-        dec_hid_dim: int = 64,
+        img_size: int = 128, # 여기 수정하기
+        dec_hid_dim: int = 128,
         dec_init_size_f: int = 16,
-        dec_init_size_t: int = 2,
+        dec_init_size_t: int = 1,
         dec_depth: int = 6,
         ctr = False
     ):
@@ -253,9 +252,11 @@ class SlotDecoder(nn.Module) :
             slots = out['slots']
         # B,n_slots,slot_dim = out['slots'].shape
         out = self.decoder(out['slots'],ft)
-        # print(f"ft : {ft}")
-        print(f"out : {out.size()}")
-        out = out.reshape(B,self.num_slots,ft[0],ft[1],4).permute(0,1,4,2,3)
+        out = out.reshape(B,self.num_slots,ft[0],ft[1],4,4).permute(0,1,4,2,3,5)
+        mask = torch.sum(nn.Softmax(dim=2)(out),dim=1).unsqueeze(1)
+        mask = mask / torch.sum(mask,dim=2).unsqueeze(2) 
+        out = torch.sum(out * mask,dim=1).squeeze(1).permute(0,1,4,2,3)
+        # 이거 3D conv로 해도 될듯
         if train and self.ctr : 
             return out, slots
         return out

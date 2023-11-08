@@ -702,7 +702,6 @@ class HDemucsSlot_tr(nn.Module):
         return out.to(init)
 
     def forward(self, mix):
-        print(f"--------------------------------")
         x = mix
         length = x.shape[-1]
         # if distrib.rank ==0 :
@@ -805,7 +804,6 @@ class HDemucsSlot_tr(nn.Module):
         assert len(saved) == 0
         assert len(lengths_t) == 0
         assert len(saved_t) == 0
-        
         slot_out = self.slot_attention(feat_slot,(Fq,T))
         slot_out = slot_out * std[:, None] + mean[:, None]
 
