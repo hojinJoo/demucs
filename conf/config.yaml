@@ -246,8 +246,7 @@ hdemucs_slot_ctr :
   # Weight init
   rescale: 0.1
 
-hdemucs_slot_tr: 
-  name : hdemucs_slot_tr
+hdemucs_slot_tr : 
   channels: 48
   channels_time:
   growth: 2
@@ -286,7 +285,7 @@ hdemucs_slot_tr:
   dconv_init: 1e-3
   # Weight init
   rescale: 0.1
-
+  
 
 hdemucs:  # see demucs/hdemucs.py for a detailed description
   # Channels

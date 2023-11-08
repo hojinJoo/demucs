@@ -4,9 +4,8 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-
 """
-Slot 차원 바꾼 버전
+slot attention 순서 바뀜
 """
 
 
@@ -420,7 +419,8 @@ class HDemucsSlot_tr(nn.Module):
                  rescale=0.1,
                  # Metadata
                  samplerate=44100,
-                 segment=4 * 10):
+                 segment=4 * 10,
+                 **kwargs):
         """
         Args:
             sources (list[str]): list of source names.
@@ -490,7 +490,7 @@ class HDemucsSlot_tr(nn.Module):
 
         self.encoder = nn.ModuleList()
         self.decoder = nn.ModuleList()
-        self.slot_attention = SlotDecoder()
+        self.slot_attention = SlotDecoder(**kwargs)
         if hybrid:
             self.tencoder = nn.ModuleList()
             self.tdecoder = nn.ModuleList()
@@ -702,6 +702,7 @@ class HDemucsSlot_tr(nn.Module):
         return out.to(init)
 
     def forward(self, mix):
+        print(f"--------------------------------")
         x = mix
         length = x.shape[-1]
         # if distrib.rank ==0 :
@@ -776,10 +777,8 @@ class HDemucsSlot_tr(nn.Module):
         for idx, decode in enumerate(self.decoder):
             skip = saved.pop(-1)
             x, pre = decode(x, skip, lengths.pop(-1))
-            if idx ==0 :
-                feat_slot = x
-            # if distrib.rank == 0:
-            #     print(f"ln 758 after decode idx : {idx} x.shape: {x.shape} skip.shape: {skip.shape}")
+            if idx ==2 :
+                feat_slot = x.clone().detach()
             # `pre` contains the output just before final transposed convolution,
             # which is used when the freq. and time branch separate.
 
@@ -801,7 +800,7 @@ class HDemucsSlot_tr(nn.Module):
                     xt, _ = tdec(xt, skip, length_t)
                     # if distrib.rank == 0:
                     #     print(f"ln 772 when tdec is not empty idx : {idx} xt shape {xt.shape}")
-                    
+        
         # Let's make sure we used all stored skip connections.
         assert len(saved) == 0
         assert len(lengths_t) == 0
@@ -809,7 +808,7 @@ class HDemucsSlot_tr(nn.Module):
         
         slot_out = self.slot_attention(feat_slot,(Fq,T))
         slot_out = slot_out * std[:, None] + mean[:, None]
-        
+
         S = len(self.sources)
         x = x.view(B, S, -1, Fq, T)
         x = x * std[:, None] + mean[:, None]

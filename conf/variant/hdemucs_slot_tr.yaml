@@ -1,0 +1,18 @@
+# @package _global_
+#slot 위치 변경
+model: hdemucs_slot_tr
+batch_size: 8
+dset :
+  segment : 5.94
+
+ema :
+  epoch: [0.9,0.95]
+  batch: [0.9995,0.9999]
+  
+epochs: 600
+augment :
+  repitch : 
+    proba : 0
+svd :
+  penalty : 1e-5
+

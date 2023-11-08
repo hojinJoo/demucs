@@ -4,7 +4,7 @@ from torch import nn
 import numpy as np
 
 """
-Slot 순서 바꾼 버전
+Slot 위치 바꾼 버전
 """
 
 
