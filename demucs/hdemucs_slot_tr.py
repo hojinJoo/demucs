@@ -821,9 +821,11 @@ class HDemucsSlot_tr(nn.Module):
         # if distrib.rank == 0:
         #     print(f"ln 796 x.shape: {x.shape}")
         zout = self._mask(z, x)
-        x = self._ispec(zout, length)
-
         slot_out = self._mask(z, slot_out)
+        
+        specs = torch.stack([z,zout + slot_out])
+        
+        x = self._ispec(zout, length)
         slot_out = self._ispec(slot_out, length)
         # back to mps device
         if x_is_mps:

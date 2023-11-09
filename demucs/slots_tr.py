@@ -242,6 +242,12 @@ class SlotDecoder(nn.Module) :
         self.ctr= ctr
         self.slot_attention = SlotAttention(num_slots,num_iterations,num_attn_heads,slot_dim,hid_dim,mlp_hid_dim,eps,ctr=ctr)
         self.decoder = Decoder(img_size,slot_dim,dec_hid_dim,dec_init_size_f,dec_init_size_t,dec_depth)
+        self.convs = nn.Sequential(
+            nn.Conv2d(16, 16, 3, stride=(1, 1), padding=1),
+            nn.ReLU(),
+            nn.Conv2d(16, 16, 3, stride=(1, 1), padding=1)
+        )
+        
     def forward(self,inputs,ft,num_slots=None,train=True) :
         # ft는 fianl output size
         B,C,Fr,T = inputs.shape
@@ -253,10 +259,14 @@ class SlotDecoder(nn.Module) :
         # B,n_slots,slot_dim = out['slots'].shape
         out = self.decoder(out['slots'],ft)
         out = out.reshape(B,self.num_slots,ft[0],ft[1],4,4).permute(0,1,4,2,3,5)
+        
         mask = torch.sum(nn.Softmax(dim=2)(out),dim=1).unsqueeze(1)
         mask = mask / torch.sum(mask,dim=2).unsqueeze(2) 
-        out = torch.sum(out * mask,dim=1).squeeze(1).permute(0,1,4,2,3)
-        # 이거 3D conv로 해도 될듯
+        out = torch.sum(out * mask,dim=1).squeeze(1).permute(0,1,4,2,3) # B ,4,4,2048,256
+        
+        # out = out.reshape(B,16,ft[0],ft[1])
+        # out = self.convs(out)
+        
         if train and self.ctr : 
             return out, slots
         return out
