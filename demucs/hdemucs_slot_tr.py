@@ -810,7 +810,7 @@ class HDemucsSlot_tr(nn.Module):
         S = len(self.sources)
         x = x.view(B, S, -1, Fq, T)
         x = x * std[:, None] + mean[:, None]
-
+        
         # to cpu as mps doesnt support complex numbers
         # demucs issue #435 ##432
         # NOTE: in this case z already is on cpu
@@ -823,7 +823,6 @@ class HDemucsSlot_tr(nn.Module):
         zout = self._mask(z, x)
         slot_out = self._mask(z, slot_out)
         
-        specs = torch.stack([z,zout + slot_out])
         
         x = self._ispec(zout, length)
         slot_out = self._ispec(slot_out, length)
