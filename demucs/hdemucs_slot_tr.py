@@ -833,5 +833,5 @@ class HDemucsSlot_tr(nn.Module):
         if self.hybrid:
             xt = xt.view(B, S, -1, length)
             xt = xt * stdt[:, None] + meant[:, None]
-            x = xt + x  + slot_out
+            x = torch.mean(torch.stack([x,xt,slot_out]), dim=0)
         return x
