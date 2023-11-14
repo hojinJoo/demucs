@@ -23,7 +23,7 @@ dset:
   metadata: ./metadata
   sources: ['drums', 'bass', 'other', 'vocals']
   valid_samples: # valid dataset size
-  backend: null   # if provided select torchaudio backend.
+  backend: null   # if provided select torchaudio backend.R
 
 test:
   save: False
@@ -289,7 +289,7 @@ hdemucs_slot_tr :
 
 hdemucs:  # see demucs/hdemucs.py for a detailed description
   # Channels
-  channels: 48
+  channels: 24
   channels_time:
   growth: 2
   # STFT

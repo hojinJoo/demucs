@@ -813,5 +813,5 @@ class HDemucs(nn.Module):
         if self.hybrid:
             xt = xt.view(B, S, -1, length)
             xt = xt * stdt[:, None] + meant[:, None]
-            x = xt + x
+            x = torch.mean(torch.stack([x, xt]), dim=0)
         return x
