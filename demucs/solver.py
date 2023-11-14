@@ -19,7 +19,7 @@ from .ema import ModelEMA
 from .evaluate import evaluate, new_sdr
 from .svd import svd_penalty
 from .utils import pull_metric, EMA
-
+from .visualizer import visualize
 logger = logging.getLogger(__name__)
 
 
@@ -72,7 +72,8 @@ class Solver(object):
 
         self.link = xp.link
         self.history = self.link.history
-
+        print(f"self folder : {self.folder}")
+        exit()
         self._reset()
 
     def _serialize(self, epoch):
@@ -324,10 +325,13 @@ class Solver(object):
                 estimate = apply_model(self.model, mix, split=self.args.test.split, overlap=0)
             else:
                 # print("여기임")
-                estimate = self.dmodel(mix)
+                estimate,slots = self.dmodel(mix)
             if train and hasattr(self.model, 'transform_target'):
                 sources = self.model.transform_target(mix, sources)
             assert estimate.shape == sources.shape, (estimate.shape, sources.shape)
+            if distrib.rank ==0 :
+                visualize(slots,"/")
+            
             dims = tuple(range(2, sources.dim()))
 
             if args.optim.loss == 'l1':

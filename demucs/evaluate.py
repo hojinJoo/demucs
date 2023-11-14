@@ -19,6 +19,7 @@ import museval
 import torch as th
 
 from .apply import apply_model
+from .apply_slot import apply_model_slot
 from .audio import convert_audio, save_audio
 from . import distrib
 from .utils import DummyPoolExecutor
@@ -107,12 +108,12 @@ def evaluate(solver, compute_sdr=False):
             ref = mix.mean(dim=0)  # mono mixture
             mix = (mix - ref.mean()) / ref.std()
             mix = convert_audio(mix, src_rate, model.samplerate, model.audio_channels)
-            estimates = apply_model(model, mix[None],
+            estimates,slots = apply_model_slot(model, mix[None],
                                     shifts=args.test.shifts, split=args.test.split,
                                     overlap=args.test.overlap)[0]
             estimates = estimates * ref.std() + ref.mean()
             estimates = estimates.to(eval_device)
-
+            print(f"slot size : {slots.size()}")
             references = th.stack(
                 [th.from_numpy(track.targets[name].audio).t() for name in model.sources])
             if references.dim() == 2:

@@ -262,15 +262,20 @@ class SlotDecoder(nn.Module) :
         
         mask = torch.sum(nn.Softmax(dim=2)(out),dim=1).unsqueeze(1)
         mask = mask / torch.sum(mask,dim=2).unsqueeze(2) 
-        out = torch.sum(out * mask,dim=1).squeeze(1).permute(0,1,4,2,3) # B ,4,4,2048,256
+        slots = torch.sum(out * mask,dim=1).squeeze(1).permute(0,1,4,2,3) # B ,4,4,2048,256
         
-        out = out.reshape(B,16,ft[0],ft[1])
+        out = slots.reshape(B,16,ft[0],ft[1])
         out = self.convs(out)
         out = out.reshape(B,4,4,ft[0],ft[1])
         
+        if train : 
+            return out, slots
         if train and self.ctr : 
             return out, slots
-        return out
+        if not train : 
+            print(f"AASDASD")
+            return out, slots
+        
         
 if __name__ == "__main__" :
     a = torch.rand(3,768,15)

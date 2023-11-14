@@ -804,7 +804,7 @@ class HDemucsSlot_tr(nn.Module):
         assert len(saved) == 0
         assert len(lengths_t) == 0
         assert len(saved_t) == 0
-        slot_out = self.slot_attention(feat_slot,(Fq,T))
+        slot_out,slots = self.slot_attention(feat_slot,(Fq,T))
         slot_out = slot_out * std[:, None] + mean[:, None]
 
         S = len(self.sources)
@@ -834,4 +834,5 @@ class HDemucsSlot_tr(nn.Module):
             xt = xt.view(B, S, -1, length)
             xt = xt * stdt[:, None] + meant[:, None]
             x = torch.mean(torch.stack([x,xt,slot_out]), dim=0)
-        return x
+        
+        return x,slots

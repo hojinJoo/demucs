@@ -17,4 +17,4 @@ augment :
 svd :
   penalty : 1e-5
 
-continue_exist : false
+continue_exist : true
